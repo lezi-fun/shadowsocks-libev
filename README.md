@@ -31,8 +31,8 @@
 ### 1. 下载脚本
 
 ```bash
-wget https://raw.githubusercontent.com/yourusername/shadowsocks-installer/main/install-ss.sh
-wget https://raw.githubusercontent.com/yourusername/shadowsocks-installer/main/uninstall-ss.sh
+wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/install-ss.sh
+wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/uninstall-ss.sh
 ```
 
 ### 2. 赋予执行权限
