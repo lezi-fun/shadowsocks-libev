@@ -180,7 +180,7 @@ chmod +x install-ss.sh
 1. Fork仓库
 2. 创建特性分支 (`git checkout -b feature/improvement`)
 3. 提交更改 (`git commit -am 'Add some feature'`)
-4. 推送到分支 (`git push origin feature/improvement`)
+4. 推送到分支dev (`git push origin feature/improvement`)
 5. 创建Pull Request
 
 ## 许可证
