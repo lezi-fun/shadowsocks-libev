@@ -16,54 +16,53 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 获取完整提交历史
 
-      - name: Get Release Version
-        id: release-version
+      - name: Get Release Date
+        id: release-date
         run: |
-          # 使用日期+时间戳确保唯一性
-          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          echo "RELEASE_VERSION=$TIMESTAMP" >> $GITHUB_OUTPUT
-          echo "RELEASE_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
-          echo "SHORT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          DATE=$(date +'%Y-%m-%d')
+          TIMESTAMP=$(date +'%s')
+          echo "RELEASE_DATE=$DATE" >> $GITHUB_OUTPUT
+          echo "RELEASE_TAG=release-$DATE" >> $GITHUB_OUTPUT
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: Prepare Release Assets
         run: |
-          # 创建包含脚本的文件夹
-          mkdir -p scripts-release
-          cp install-ss.sh scripts-release/
-          cp uninstall-ss.sh scripts-release/
+          # 创建脚本压缩包
+          tar -czvf scripts-${{ steps.release-date.outputs.RELEASE_DATE }}.tar.gz install-ss.sh uninstall-ss.sh
           
-          # 添加版本文件
-          echo "Release Version: ${{ steps.release-version.outputs.RELEASE_VERSION }}" > scripts-release/version.txt
-          echo "Build Date: ${{ steps.release-version.outputs.RELEASE_DATE }}" >> scripts-release/version.txt
-          echo "Repository: ${{ github.repository }}" >> scripts-release/version.txt
+          # 创建固定名称的压缩包（最新版）
+          cp scripts-${{ steps.release-date.outputs.RELEASE_DATE }}.tar.gz scripts-latest.tar.gz
           
-          # 创建压缩包
-          tar -czvf scripts-${{ steps.release-version.outputs.SHORT_DATE }}.tar.gz scripts-release/*
-          
-          # 创建当前版本副本（固定文件名）
-          cp scripts-${{ steps.release-version.outputs.SHORT_DATE }}.tar.gz scripts-latest.tar.gz
+          # 创建版本信息文件
+          echo "Release Date: ${{ steps.release-date.outputs.RELEASE_DATE }}" > version.txt
+          echo "Build Timestamp: ${{ steps.release-date.outputs.TIMESTAMP }}" >> version.txt
+          echo "GitHub Repository: ${{ github.repository }}" >> version.txt
+          echo "GitHub Run ID: ${{ github.run_id }}" >> version.txt
 
-      - name: Create Release
+      - name: Create or Update Release
         uses: ncipollo/release-action@v1
         with:
-          # 使用日期作为标签
-          tag: daily-${{ steps.release-version.outputs.SHORT_DATE }}
-          name: "Daily Script Release - ${{ steps.release-version.outputs.SHORT_DATE }}"
+          # 每天使用固定标签覆盖
+          tag: daily-latest
+          name: "Latest Scripts (${{ steps.release-date.outputs.RELEASE_DATE }})"
           body: |
-            ### 自动发布的脚本
+             🚀 每日自动更新的脚本
             
-            包含以下脚本：
+            **包含文件:**
             - `install-ss.sh`
             - `uninstall-ss.sh`
             
-            版本: ${{ steps.release-version.outputs.RELEASE_VERSION }}
-            发布日期: ${{ steps.release-version.outputs.RELEASE_DATE }}
+            **发布日期:** ${{ steps.release-date.outputs.RELEASE_DATE }}
+            **构建时间:** ${{ steps.release-date.outputs.TIMESTAMP }}
+            
+            [查看工作流运行详情](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           artifacts: |
-            scripts-${{ steps.release-version.outputs.SHORT_DATE }}.tar.gz
+            scripts-${{ steps.release-date.outputs.RELEASE_DATE }}.tar.gz
             scripts-latest.tar.gz
-          allowUpdates: true  # 允许更新同名标签
+            version.txt
+          allowUpdates: true  # 允许覆盖同名标签
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
@@ -71,28 +70,31 @@ jobs:
       # 清理旧版本（保留最近5个）
       - name: Cleanup Old Releases
         run: |
-          # 列出所有每日发布并按日期排序
-          releases=$(gh release list --limit 100 | grep "daily-" | awk '{print $1}')
-          sorted_releases=$(echo "$releases" | sort -r)
+          # 安装必要的工具
+          sudo apt-get update
+          sudo apt-get install -y jq curl
           
-          # 获取前5个最新的（跳过前5个）
+          # 获取所有release列表
+          releases=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100" | jq -r '.[] | select(.name | contains("Latest Scripts")) | [.created_at, .id, .tag_name] | @tsv' | sort -r)
+          
+          # 保留最新5个
           keep_count=5
-          remove_count=$(echo "$sorted_releases" | wc -l)
-          releases_to_delete=$(echo "$sorted_releases" | tail -n +$((keep_count + 1)))
+          counter=0
           
-          if [ -n "$releases_to_delete" ]; then
-            echo "需要删除的旧版本:"
-            echo "$releases_to_delete"
-            
-            for release in $releases_to_delete; do
-              echo "删除版本: $release"
-              gh release delete "$release" --yes
-              git push --delete origin "refs/tags/$release"
-            done
-          else
-            echo "没有需要删除的旧版本"
-          fi
+          echo "$releases" | while IFS=$'\t' read -r created_at id tag; do
+            counter=$((counter+1))
+            if [ $counter -gt $keep_count ]; then
+              echo "删除旧版本: $tag (ID: $id)"
+              # 删除release
+              curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/$id"
+              # 删除标签
+              curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$tag"
+            fi
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # 确保已安装 GitHub CLI
+        # 即使清理失败也不影响整体工作流
         continue-on-error: true
