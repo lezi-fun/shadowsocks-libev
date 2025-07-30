@@ -2,12 +2,8 @@ name: Daily Script Release
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天 UTC 00:00 (北京时间 08:00)
+    - cron: '0 0 * * *'
   workflow_dispatch:
-  push:
-    paths:
-      - 'install-ss.sh'
-      - 'uninstall-ss.sh'
 
 jobs:
   release-scripts:
@@ -15,86 +11,22 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 获取完整提交历史
 
-      - name: Get Release Date
-        id: release-date
+      - name: Prepare Scripts
         run: |
-          DATE=$(date +'%Y-%m-%d')
-          TIMESTAMP=$(date +'%s')
-          echo "RELEASE_DATE=$DATE" >> $GITHUB_OUTPUT
-          echo "RELEASE_TAG=release-$DATE" >> $GITHUB_OUTPUT
-          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_OUTPUT
+          # 创建带日期的压缩包
+          tar -czvf scripts-$(date +'%Y-%m-%d').tar.gz install-ss.sh uninstall-ss.sh
+          # 创建固定名称压缩包
+          cp scripts-$(date +'%Y-%m-%d').tar.gz scripts-latest.tar.gz
 
-      - name: Prepare Release Assets
-        run: |
-          # 创建脚本压缩包
-          tar -czvf scripts-${{ steps.release-date.outputs.RELEASE_DATE }}.tar.gz install-ss.sh uninstall-ss.sh
-          
-          # 创建固定名称的压缩包（最新版）
-          cp scripts-${{ steps.release-date.outputs.RELEASE_DATE }}.tar.gz scripts-latest.tar.gz
-          
-          # 创建版本信息文件
-          echo "Release Date: ${{ steps.release-date.outputs.RELEASE_DATE }}" > version.txt
-          echo "Build Timestamp: ${{ steps.release-date.outputs.TIMESTAMP }}" >> version.txt
-          echo "GitHub Repository: ${{ github.repository }}" >> version.txt
-          echo "GitHub Run ID: ${{ github.run_id }}" >> version.txt
-
-      - name: Create or Update Release
-        uses: ncipollo/release-action@v1
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          # 每天使用固定标签覆盖
-          tag: daily-latest
-          name: "Latest Scripts (${{ steps.release-date.outputs.RELEASE_DATE }})"
-          body: |
-             🚀 每日自动更新的脚本
-            
-            **包含文件:**
-            - `install-ss.sh`
-            - `uninstall-ss.sh`
-            
-            **发布日期:** ${{ steps.release-date.outputs.RELEASE_DATE }}
-            **构建时间:** ${{ steps.release-date.outputs.TIMESTAMP }}
-            
-            [查看工作流运行详情](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          artifacts: |
-            scripts-${{ steps.release-date.outputs.RELEASE_DATE }}.tar.gz
+          tag_name: daily-latest
+          name: "Latest Scripts ($(date +'%Y-%m-%d'))"
+          body: "自动更新于 $(date)"
+          files: |
+            scripts-$(date +'%Y-%m-%d').tar.gz
             scripts-latest.tar.gz
-            version.txt
-          allowUpdates: true  # 允许覆盖同名标签
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
-
-      # 清理旧版本（保留最近5个）
-      - name: Cleanup Old Releases
-        run: |
-          # 安装必要的工具
-          sudo apt-get update
-          sudo apt-get install -y jq curl
-          
-          # 获取所有release列表
-          releases=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100" | jq -r '.[] | select(.name | contains("Latest Scripts")) | [.created_at, .id, .tag_name] | @tsv' | sort -r)
-          
-          # 保留最新5个
-          keep_count=5
-          counter=0
-          
-          echo "$releases" | while IFS=$'\t' read -r created_at id tag; do
-            counter=$((counter+1))
-            if [ $counter -gt $keep_count ]; then
-              echo "删除旧版本: $tag (ID: $id)"
-              # 删除release
-              curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
-                "https://api.github.com/repos/${{ github.repository }}/releases/$id"
-              # 删除标签
-              curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
-                "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$tag"
-            fi
-          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # 即使清理失败也不影响整体工作流
-        continue-on-error: true
