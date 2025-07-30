@@ -1,0 +1,71 @@
+name: Daily Script Release
+
+on:
+  schedule:
+    # 每天 UTC 时间 00:00 运行（北京时间 08:00）
+    - cron: '0 0 * * *'
+  # 允许手动触发工作流
+  workflow_dispatch:
+  # 当脚本文件有变化时也触发（可选）
+  push:
+    paths:
+      - 'install-ss.sh'
+      - 'uninstall-ss.sh'
+
+jobs:
+  release-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整提交历史
+
+      - name: Get Release Date
+        id: release-date
+        run: |
+          # 使用日期作为版本号
+          CURRENT_DATE=$(date +'%Y-%m-%d')
+          echo "RELEASE_VERSION=$CURRENT_DATE" >> $GITHUB_OUTPUT
+          echo "RELEASE_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+
+      - name: Prepare Release Assets
+        run: |
+          # 创建包含脚本的压缩包
+          mkdir -p release-assets
+          cp install-ss.sh release-assets/
+          cp uninstall-ss.sh release-assets/
+          tar -czvf scripts-${{ steps.release-date.outputs.RELEASE_VERSION }}.tar.gz release-assets/*
+          
+          # 添加版本文件
+          echo "Release Version: ${{ steps.release-date.outputs.RELEASE_VERSION }}" > version.txt
+          echo "Build Date: ${{ steps.release-date.outputs.RELEASE_DATE }}" >> version.txt
+          echo "Repository: ${{ github.repository }}" >> version.txt
+
+      - name: Create or Update Release
+        uses: softprops/action-gh-release@v1
+        with:
+          # 使用日期作为标签
+          tag_name: daily-${{ steps.release-date.outputs.RELEASE_VERSION }}
+          name: "Daily Script Release - ${{ steps.release-date.outputs.RELEASE_VERSION }}"
+          body: |
+            ### 每日自动发布的脚本
+            
+            包含以下脚本：
+            - `install-ss.sh`
+            - `uninstall-ss.sh`
+            
+            版本: ${{ steps.release-date.outputs.RELEASE_VERSION }}
+            发布日期: ${{ steps.release-date.outputs.RELEASE_DATE }}
+            
+            GitHub Actions 运行 ID: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          files: |
+            scripts-${{ steps.release-date.outputs.RELEASE_VERSION }}.tar.gz
+            version.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          # 如果同一天多次运行，覆盖之前发布的版本
+          replace: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
