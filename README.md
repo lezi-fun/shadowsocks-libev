@@ -1,4 +1,6 @@
-# Shadowsocks-libev 一键安装脚本
+# 代码先在这里贡献
+---
+# Shadowsocks-libev 一键安装脚本(测试版)
 
 ![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Shell Script](https://img.shields.io/badge/Shell_Script-100%25-brightgreen)
@@ -31,8 +33,8 @@
 ### 1. 下载脚本
 
 ```bash
-wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/install-ss.sh
-wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/uninstall-ss.sh
+wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/dev/install-ss.sh
+wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/dev/uninstall-ss.sh
 ```
 
 ### 2. 赋予执行权限
@@ -170,7 +172,7 @@ echo "ss://$(echo -n "${METHOD}:${PASSWORD}@${IP}:${PORT}" | base64 -w 0)"
 ### Q3: 如何升级脚本?
 重新下载最新版本脚本：
 ```bash
-wget -O install-ss.sh https://raw.githubusercontent.com/yourusername/shadowsocks-installer/main/install-ss.sh
+wget -O install-ss.sh https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/dev/install-ss.sh
 chmod +x install-ss.sh
 ```
 
