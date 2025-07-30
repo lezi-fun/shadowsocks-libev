@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取完整提交历史
+          fetch-depth: 0
 
       - name: Get Release Version
         id: release-version
@@ -25,6 +25,7 @@ jobs:
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           echo "RELEASE_VERSION=$TIMESTAMP" >> $GITHUB_OUTPUT
           echo "RELEASE_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+          echo "SHORT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
       - name: Prepare Release Assets
         run: |
@@ -39,14 +40,17 @@ jobs:
           echo "Repository: ${{ github.repository }}" >> scripts-release/version.txt
           
           # 创建压缩包
-          tar -czvf scripts-${{ steps.release-version.outputs.RELEASE_VERSION }}.tar.gz scripts-release/*
+          tar -czvf scripts-${{ steps.release-version.outputs.SHORT_DATE }}.tar.gz scripts-release/*
+          
+          # 创建当前版本副本（固定文件名）
+          cp scripts-${{ steps.release-version.outputs.SHORT_DATE }}.tar.gz scripts-latest.tar.gz
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          # 使用唯一时间戳作为标签
-          tag_name: release-${{ steps.release-version.outputs.RELEASE_VERSION }}
-          name: "Script Release ${{ steps.release-version.outputs.RELEASE_VERSION }}"
+          # 使用日期作为标签
+          tag: daily-${{ steps.release-version.outputs.SHORT_DATE }}
+          name: "Daily Script Release - ${{ steps.release-version.outputs.SHORT_DATE }}"
           body: |
             ### 自动发布的脚本
             
@@ -56,18 +60,39 @@ jobs:
             
             版本: ${{ steps.release-version.outputs.RELEASE_VERSION }}
             发布日期: ${{ steps.release-version.outputs.RELEASE_DATE }}
-          files: |
-            scripts-${{ steps.release-version.outputs.RELEASE_VERSION }}.tar.gz
+          artifacts: |
+            scripts-${{ steps.release-version.outputs.SHORT_DATE }}.tar.gz
+            scripts-latest.tar.gz
+          allowUpdates: true  # 允许更新同名标签
+          token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 可选：清理旧版本（保留最近5个）
+      # 清理旧版本（保留最近5个）
       - name: Cleanup Old Releases
-        uses: dev-drprasad/delete-old-releases@v0.2.0
-        with:
-          keep_latest: 5
-          delete_tag: true
+        run: |
+          # 列出所有每日发布并按日期排序
+          releases=$(gh release list --limit 100 | grep "daily-" | awk '{print $1}')
+          sorted_releases=$(echo "$releases" | sort -r)
+          
+          # 获取前5个最新的（跳过前5个）
+          keep_count=5
+          remove_count=$(echo "$sorted_releases" | wc -l)
+          releases_to_delete=$(echo "$sorted_releases" | tail -n +$((keep_count + 1)))
+          
+          if [ -n "$releases_to_delete" ]; then
+            echo "需要删除的旧版本:"
+            echo "$releases_to_delete"
+            
+            for release in $releases_to_delete; do
+              echo "删除版本: $release"
+              gh release delete "$release" --yes
+              git push --delete origin "refs/tags/$release"
+            done
+          else
+            echo "没有需要删除的旧版本"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # 确保已安装 GitHub CLI
+        continue-on-error: true
