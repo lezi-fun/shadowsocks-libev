@@ -170,7 +170,7 @@ echo "ss://$(echo -n "${METHOD}:${PASSWORD}@${IP}:${PORT}" | base64 -w 0)"
 ### Q3: 如何升级脚本?
 重新下载最新版本脚本：
 ```bash
-wget -O install-ss.sh https://raw.githubusercontent.com/yourusername/shadowsocks-installer/main/install-ss.sh
+wget -O install-ss.sh https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/install-ss.sh
 chmod +x install-ss.sh
 ```
 
