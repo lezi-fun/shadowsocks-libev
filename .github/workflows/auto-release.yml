@@ -1,0 +1,64 @@
+name: Auto-Release Scripts
+
+on:
+  schedule:
+    # 每天 UTC 时间 00:00 运行（北京时间 08:00）
+    - cron: '0 0 * * *'
+  # 也可手动触发工作流
+  workflow_dispatch:
+
+jobs:
+  track-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      scripts_changed: ${{ steps.check-changes.outputs.changed }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史记录用于比较
+
+      - name: Get Timestamp
+        id: get-timestamp
+        run: echo "timestamp=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+
+      - name: Check for Script Changes
+        id: check-changes
+        run: |
+          # 获取上次成功运行的 commit SHA
+          LAST_SHA=$(git rev-list -1 --before="${{ github.schedule }}" HEAD)
+          
+          # 比较脚本文件变化
+          if git diff --name-only $LAST_SHA HEAD | grep -E 'install-ss.sh|uninstall-ss.sh'; then
+            echo "changed=1" >> $GITHUB_OUTPUT
+          else
+            echo "changed=0" >> $GITHUB_OUTPUT
+          fi
+
+  create-release:
+    needs: track-changes
+    if: ${{ needs.track-changes.outputs.scripts_changed == '1' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p release-assets
+          cp install-ss.sh release-assets/
+          cp uninstall-ss.sh release-assets/
+          tar -czvf scripts-${{ needs.track-changes.outputs.timestamp }}.tar.gz release-assets/*
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: scripts-v${{ needs.track-changes.outputs.timestamp }}
+          name: "Auto Release ${{ needs.track-changes.outputs.timestamp }}"
+          body: "自动更新脚本 | 变更时间: ${{ needs.track-changes.outputs.timestamp }}"
+          files: |
+            scripts-${{ needs.track-changes.outputs.timestamp }}.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
