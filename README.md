@@ -33,12 +33,13 @@
 ```bash
 wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/install-ss.sh
 wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/uninstall-ss.sh
+wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/generate-ss-link.sh
 ```
 
 ### 2. 赋予执行权限
 
 ```bash
-chmod +x install-ss.sh uninstall-ss.sh
+chmod +x install-ss.sh uninstall-ss.sh generate-ss-link.sh
 ```
 
 ### 3. 运行安装脚本
@@ -61,6 +62,27 @@ sudo ./install-ss.sh
 - 加密算法
 - 订阅链接
 - 二维码
+
+## 仅生成链接与二维码（不安装）
+
+无需安装服务端，仅生成 `ss://` 链接与二维码，适合已有服务端或临时分享。
+
+```bash
+sudo ./generate-ss-link.sh
+```
+
+- 若存在 `/etc/shadowsocks-libev/config.json` 且安装 `jq`，脚本可直接读取 `method/password/port`
+- 支持手动输入 IP、端口、密码、加密算法与标签
+- 输出原始链接与 URL 安全订阅链接，并尝试用 `qrencode` 生成二维码
+
+可选依赖安装：
+
+```bash
+# Ubuntu/Debian
+sudo apt install -y jq qrencode
+# CentOS
+sudo yum install -y jq qrencode
+```
 
 ## 加密算法选择
 
@@ -168,6 +190,12 @@ IP=$(curl -4 icanhazip.com)
 echo "ss://$(echo -n "${METHOD}:${PASSWORD}@${IP}:${PORT}" | base64 -w 0)"
 ```
 
+或者直接使用脚本生成链接与二维码：
+
+```bash
+sudo ./generate-ss-link.sh
+```
+
 ### Q3: 如何升级脚本?
 重新下载最新版本脚本：
 ```bash
@@ -183,6 +211,8 @@ chmod +x install-ss.sh
 3. 提交更改 (`git commit -am 'Add some feature'`)
 4. 推送到分支dev (`git push origin feature/improvement`)
 5. 创建Pull Request
+
+- 所有新增的脚本或功能必须同步更新 `README.md`（涵盖下载方式、执行权限、使用说明、常见问题等），否则 PR 可能不会被合并。
 
 ## 许可证
 
