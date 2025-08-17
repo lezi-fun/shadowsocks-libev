@@ -19,7 +19,7 @@ if grep -Eqi "Ubuntu|Debian" /etc/issue; then
     apt update && apt upgrade -y
     apt install -y curl wget git jq qrencode
     if [ "$ENABLE_BBR" = true ]; then
-        bash <(curl -Lso- https://git.io/kernel.sh)
+        bash <(curl -sL https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh)
     else
         echo "已跳过 BBR 加速。"
     fi
@@ -32,7 +32,7 @@ elif grep -Eqi "CentOS|Red Hat" /etc/redhat-release; then
     yum update -y
     yum install -y curl wget git jq qrencode
     if [ "$ENABLE_BBR" = true ]; then
-        bash <(curl -Lso- https://git.io/kernel.sh)
+        bash <(curl -sL https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh)
     else
         echo "已跳过 BBR 加速。"
     fi
