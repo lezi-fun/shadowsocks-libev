@@ -16,8 +16,8 @@ fi
 
 # 自动检测系统并安装
 if grep -Eqi "Ubuntu|Debian" /etc/issue; then
-    apt update && apt upgrade -y
-    apt install -y curl wget git jq qrencode
+    DEBIAN_FRONTEND=noninteractive apt update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt upgrade -y -qq >/dev/null
+    DEBIAN_FRONTEND=noninteractive apt install -y -qq curl wget git jq qrencode >/dev/null
     if [ "$ENABLE_BBR" = true ]; then
         bash <(curl -Lso- https://git.io/kernel.sh)
     else
@@ -25,12 +25,12 @@ if grep -Eqi "Ubuntu|Debian" /etc/issue; then
     fi
     
     # 安装 Shadowsocks
-    apt install -y shadowsocks-libev
+    DEBIAN_FRONTEND=noninteractive apt install -y -qq shadowsocks-libev >/dev/null
     systemctl stop shadowsocks-libev.service
     
 elif grep -Eqi "CentOS|Red Hat" /etc/redhat-release; then
-    yum update -y
-    yum install -y curl wget git jq qrencode
+    yum -y -q update >/dev/null
+    yum -y -q install curl wget git jq qrencode >/dev/null
     if [ "$ENABLE_BBR" = true ]; then
         bash <(curl -Lso- https://git.io/kernel.sh)
     else
@@ -38,8 +38,8 @@ elif grep -Eqi "CentOS|Red Hat" /etc/redhat-release; then
     fi
     
     # 安装 Shadowsocks
-    yum install -y epel-release
-    yum install -y shadowsocks-libev
+    yum -y -q install epel-release >/dev/null
+    yum -y -q install shadowsocks-libev >/dev/null
     systemctl stop shadowsocks-libev
 else
     echo "不支持的操作系统！"
