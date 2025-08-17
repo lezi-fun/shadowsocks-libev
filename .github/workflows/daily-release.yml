@@ -15,7 +15,7 @@ jobs:
       - name: Prepare Scripts
         run: |
           # 创建带日期的压缩包
-          tar -czvf scripts-$(date +'%Y-%m-%d').tar.gz install-ss.sh uninstall-ss.sh
+          tar -czvf scripts-$(date +'%Y-%m-%d').tar.gz install-ss.sh uninstall-ss.sh generate-ss-link.sh install-ss-docker.sh
           # 创建固定名称压缩包
           cp scripts-$(date +'%Y-%m-%d').tar.gz scripts-latest.tar.gz
 
