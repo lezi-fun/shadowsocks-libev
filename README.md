@@ -35,12 +35,13 @@
 wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/install-ss.sh
 wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/uninstall-ss.sh
 wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/generate-ss-link.sh
+wget https://raw.githubusercontent.com/lezi-fun/shadowsocks-libev/main/install-ss-docker.sh
 ```
 
 ### 2. 赋予执行权限
 
 ```bash
-chmod +x install-ss.sh uninstall-ss.sh generate-ss-link.sh
+chmod +x install-ss.sh uninstall-ss.sh generate-ss-link.sh install-ss-docker.sh
 ```
 
 ### 3. 运行安装脚本
@@ -222,3 +223,23 @@ chmod +x install-ss.sh
 ---
 
 **免责声明**: 此脚本仅用于教育目的，请确保在使用前了解并遵守当地法律法规。开发者不对任何不当使用负责。
+
+## 通过 Docker 安装
+
+无需在宿主机安装 shadowsocks-libev，使用 Docker 运行：
+
+```bash
+sudo ./install-ss-docker.sh
+```
+
+- 自动检测 Docker，若未安装可选择一键安装（使用官方脚本）
+- 自定义端口、密码、加密算法、容器名称
+- 自动放行防火墙端口（如检测到 `ufw` 或 `firewalld`）
+- 安装完成后输出 `ss://` 原始链接、URL 安全订阅链接和二维码（如安装了 `qrencode`）
+
+管理容器：
+```bash
+docker logs -f ss-libev
+docker restart ss-libev
+docker rm -f ss-libev
+```
