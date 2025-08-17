@@ -6,11 +6,23 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
+# 选择是否启用 BBR 加速
+read -p "是否启用 BBR 加速? [Y/n]: " ENABLE_BBR_INPUT
+if [ -z "$ENABLE_BBR_INPUT" ] || [[ "$ENABLE_BBR_INPUT" =~ ^[Yy]$ ]]; then
+    ENABLE_BBR=true
+else
+    ENABLE_BBR=false
+fi
+
 # 自动检测系统并安装
 if grep -Eqi "Ubuntu|Debian" /etc/issue; then
     apt update && apt upgrade -y
     apt install -y curl wget git jq qrencode
-    bash <(curl -sL https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh)
+    if [ "$ENABLE_BBR" = true ]; then
+        bash <(curl -sL https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh)
+    else
+        echo "已跳过 BBR 加速。"
+    fi
     
     # 安装 Shadowsocks
     apt install -y shadowsocks-libev
@@ -19,7 +31,11 @@ if grep -Eqi "Ubuntu|Debian" /etc/issue; then
 elif grep -Eqi "CentOS|Red Hat" /etc/redhat-release; then
     yum update -y
     yum install -y curl wget git jq qrencode
-    bash <(curl -sL https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh)
+    if [ "$ENABLE_BBR" = true ]; then
+        bash <(curl -sL https://raw.githubusercontent.com/chiakge/Linux-NetSpeed/master/tcp.sh)
+    else
+        echo "已跳过 BBR 加速。"
+    fi
     
     # 安装 Shadowsocks
     yum install -y epel-release
@@ -81,7 +97,7 @@ case $ALGO_CHOICE in
     7) METHOD="camellia-192-gcm" ;;
     8) METHOD="camellia-128-gcm" ;;
     *) METHOD="aes-256-gcm" ;;
-esac
+ esac
 
 # 创建配置文件
 cat > /etc/shadowsocks-libev/config.json << EOF
