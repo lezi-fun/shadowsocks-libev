@@ -10,7 +10,7 @@ English documentation for the scripts in this repository. For Chinese, see `READ
 
 - ✅ Automated installation of Shadowsocks-libev server
 - 🔧 Custom port, password, and cipher
-- 🚀 Optional BBR acceleration
+- 🚀 Optional BBR acceleration (configured via system kernel parameters, no short-link script)
 - 🔗 Auto-generate client import links
 - 📱 QR code for quick client setup
 - 🔇 Silent package installation (auto -y, hide process output; errors still shown)
@@ -56,7 +56,7 @@ sudo ./generate-ss-link.sh
 ```bash
 sudo ./install-ss-docker.sh
 ```
-- Detects Docker and offers auto-install (official script)
+- Detects Docker and offers auto-install (downloads a pinned installer to a temp file, verifies SHA256, then executes)
 - Custom port, password, cipher, container name
 - Auto-open firewall (if `ufw` or `firewalld` exists)
 - Outputs links and QR after setup
@@ -90,12 +90,22 @@ ss://base64(cipher:password@server_ip:port)
 ss://base64(cipher:password@server_ip:port)#label
 ```
 
+> Note: the label is automatically URL-encoded (`%HH` for bytes outside unreserved set), so spaces, UTF-8 bytes, `#`, `?`, `&` and similar characters remain client-compatible.
+
+### Hash upgrade maintenance flow (Docker installer)
+1. Select a new pinned `docker-install` version (commit/tag; avoid short links).
+2. Download and calculate SHA256:
+```bash
+curl -fsSL "https://raw.githubusercontent.com/docker/docker-install/<VERSION>/install.sh" -o /tmp/docker-install.sh
+sha256sum /tmp/docker-install.sh
+```
+3. Update `DOCKER_INSTALL_VERSION`, `DOCKER_INSTALL_URL`, and `EXPECTED_DOCKER_INSTALL_SHA256` in `install-ss-docker.sh`.
+4. Re-run download + verification before merging.
+
 ## Clients
 
-- Windows: Shadowsocks-Windows
-- macOS: ShadowsocksX-NG
-- Android: Shadowsocks-Android
-- iOS: Shadowrocket (paid)
+- Clash client downloads: <https://github.com/clash-version/clash-download>
+- Please choose a Clash client version that matches your OS and current version requirements.
 
 ## Manage Service (host install)
 
@@ -128,6 +138,7 @@ sudo ./uninstall-ss.sh
 - Stops and disables service
 - Removes package and config
 - Cleans firewall rules and logs
+- Works without `jq`: falls back to `sed/awk` to parse `server_port`, and prompts for manual port input if parsing still fails
 
 ## FAQ
 
