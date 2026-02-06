@@ -146,8 +146,8 @@ ss://base64(加密算法:密码@服务器IP:端口)#服务器标识
 curl -fsSL "https://raw.githubusercontent.com/docker/docker-install/<VERSION>/install.sh" -o /tmp/docker-install.sh
 sha256sum /tmp/docker-install.sh
 ```
-3. 同步更新 `install-ss-docker.sh` 中的 `DOCKER_INSTALL_VERSION`、`DOCKER_INSTALL_URL`、`EXPECTED_DOCKER_INSTALL_SHA256`。
-4. 提交前重新执行下载+校验，确认脚本可正常安装。
+3. 仓库内已提供自动化脚本 `scripts/update-docker-install-hash.sh`，并由 GitHub Action `.github/workflows/daily-docker-install-hash.yml` 每天自动执行一次。
+4. 若哈希发生变化，Action 会自动更新 `install-ss-docker.sh` 并提交代码；也可手动执行该脚本进行本地更新。
 
 ## 客户端支持
 
