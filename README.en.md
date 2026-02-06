@@ -99,8 +99,8 @@ ss://base64(cipher:password@server_ip:port)#label
 curl -fsSL "https://raw.githubusercontent.com/docker/docker-install/<VERSION>/install.sh" -o /tmp/docker-install.sh
 sha256sum /tmp/docker-install.sh
 ```
-3. Update `DOCKER_INSTALL_VERSION`, `DOCKER_INSTALL_URL`, and `EXPECTED_DOCKER_INSTALL_SHA256` in `install-ss-docker.sh`.
-4. Re-run download + verification before merging.
+3. This repo includes `scripts/update-docker-install-hash.sh`, and `.github/workflows/daily-docker-install-hash.yml` runs it once per day automatically.
+4. If the hash changes, the workflow auto-updates `install-ss-docker.sh` and commits the change; you can also run the script locally.
 
 ## Clients
 
