@@ -4,9 +4,9 @@ IFS=$' \n\t'
 
 # 通过 Docker 安装并运行 Shadowsocks-libev（支持自定义配置与订阅链接/二维码生成）
 
-DOCKER_INSTALL_VERSION="1c2a765dbb0130b922c0a7b8163d0d3dfd2edfef"
+DOCKER_INSTALL_VERSION="02cb80d6c7d24c85a458ae31d166a6c535c7a37a"
 DOCKER_INSTALL_URL="https://raw.githubusercontent.com/docker/docker-install/${DOCKER_INSTALL_VERSION}/install.sh"
-EXPECTED_DOCKER_INSTALL_SHA256="3e6595355ec14620dfa568e8e23abd45a3d13fd1a3bfffb642b0c1d5610b8367"
+EXPECTED_DOCKER_INSTALL_SHA256="b3555270be73b406b2ce5b44e96e1d1ec0bc0217a9ba3de2c876f2e45a3040a1"
 CONFIG_LABEL="Shadowsocks_Docker"
 MANUAL_IP_USED="false"
 
